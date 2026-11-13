@@ -1,0 +1,678 @@
+================================================================================
+SYSTEM PROJECT - COMMAND REFERENCE & BUILD LOG
+================================================================================
+Created: November 13, 2026
+Purpose: Document all commands used to build the project foundation and their functions
+
+This file serves as a learning reference to understand:
+- What each command does
+- Why we used it
+- What it creates/modifies
+- Common issues and solutions
+
+================================================================================
+PHASE 0: PROJECT INITIALIZATION
+================================================================================
+
+─────────────────────────────────────────────────────────────────────────────
+STEP 1: Create Next.js Project
+─────────────────────────────────────────────────────────────────────────────
+
+Command:
+  npx create-next-app@latest system-project --typescript --tailwind --app --import-alias "@/*" --eslint
+
+What it does:
+  - Downloads and runs the latest Next.js project generator
+  - Creates a new directory called "system-project"
+  - Sets up Next.js 15 with TypeScript
+  - Configures Tailwind CSS for styling
+  - Uses App Router (new Next.js routing system)
+  - Sets up import alias (@/* for cleaner imports)
+  - Configures ESLint for code quality
+
+What it creates:
+  ✓ package.json - Project dependencies and scripts
+  ✓ next.config.ts - Next.js configuration
+  ✓ tsconfig.json - TypeScript configuration
+  ✓ tailwind.config.ts - Tailwind CSS configuration
+  ✓ app/ - App Router directory (routes live here)
+  ✓ public/ - Static assets
+  ✓ .gitignore - Files to exclude from Git
+
+Options explained:
+  --typescript    : Use TypeScript instead of JavaScript
+  --tailwind      : Include Tailwind CSS
+  --app           : Use App Router (vs Pages Router)
+  --import-alias  : Set up @/* imports (e.g., @/components/Button)
+  --eslint        : Include ESLint for code linting
+
+Alternative command (if create-next-app is already installed):
+  create-next-app system-project --typescript --tailwind --app
+
+
+─────────────────────────────────────────────────────────────────────────────
+STEP 2: Install Dependencies
+─────────────────────────────────────────────────────────────────────────────
+
+Command:
+  npm install
+
+What it does:
+  - Reads package.json
+  - Downloads all dependencies from npm registry
+  - Creates node_modules/ folder with all packages
+  - Creates package-lock.json (locks exact versions)
+
+What it installs:
+  ✓ next - Next.js framework
+  ✓ react - React library
+  ✓ react-dom - React DOM bindings
+  ✓ typescript - TypeScript compiler
+  ✓ tailwindcss - Tailwind CSS framework
+  ✓ eslint - Code linter
+  ✓ @types/* - TypeScript type definitions
+
+Time taken: ~2-3 minutes
+Output: ~357 packages installed
+
+
+─────────────────────────────────────────────────────────────────────────────
+STEP 3: Install Prisma ORM
+─────────────────────────────────────────────────────────────────────────────
+
+Command:
+  npm install prisma@5.22.0 @prisma/client@5.22.0
+
+What it does:
+  - Installs Prisma CLI (prisma) - for migrations, schema management
+  - Installs Prisma Client (@prisma/client) - for database queries
+  - Downloads Prisma query engine for your platform (Windows/Mac/Linux)
+
+Why version 5.22.0?
+  - Latest stable version (avoiding Prisma 8 beta which has breaking changes)
+  - Well-documented and widely used
+  - Compatible with all features we need
+
+What is Prisma?
+  Prisma is an ORM (Object-Relational Mapping) tool that:
+  - Lets you define database schema in one file (schema.prisma)
+  - Auto-generates TypeScript types from your schema
+  - Provides type-safe database queries
+  - Handles migrations (database version control)
+
+Alternative:
+  npm install prisma @prisma/client (installs latest version)
+
+
+─────────────────────────────────────────────────────────────────────────────
+STEP 4: Approve Prisma Install Scripts
+─────────────────────────────────────────────────────────────────────────────
+
+Command:
+  npm install-scripts approve @prisma/client prisma @prisma/engines
+
+What it does:
+  - Allows Prisma to run post-install scripts
+  - These scripts download the Prisma query engine binary
+  - Required for Prisma to function properly
+
+Why needed?
+  - npm blocks install scripts for security by default
+  - Prisma needs to download platform-specific binaries
+  - Safe to approve for official packages like Prisma
+
+Follow-up command:
+  npm rebuild
+
+What npm rebuild does:
+  - Reruns post-install scripts for all approved packages
+  - Completes the Prisma installation
+  - Downloads the query engine
+
+
+─────────────────────────────────────────────────────────────────────────────
+STEP 5: Initialize Prisma
+─────────────────────────────────────────────────────────────────────────────
+
+Command:
+  npx prisma init
+
+What it does:
+  - Creates prisma/ directory
+  - Creates prisma/schema.prisma file (database schema definition)
+  - Creates .env file (for database connection string)
+  - Sets up basic Prisma configuration
+
+Default setup:
+  - Uses PostgreSQL by default
+  - We'll modify it to use SQLite instead
+
+Note: In Prisma 8 (latest), the command creates prisma.config.ts instead.
+We're using Prisma 5 which uses the traditional schema.prisma approach.
+
+
+─────────────────────────────────────────────────────────────────────────────
+STEP 6: Create Database Schema
+─────────────────────────────────────────────────────────────────────────────
+
+Manual step: Create prisma/schema.prisma file
+
+What we defined:
+  - Database provider: SQLite
+  - Database URL: file:../data/system.db
+  - 9 models (tables):
+    ├─ Player          (your character profile)
+    ├─ Attribute       (Intelligence, Strength, etc.)
+    ├─ Quest           (tasks to complete)
+    ├─ QuestCompletion (history of completed quests)
+    ├─ XPTransaction   (XP ledger - like a bank account)
+    ├─ Goal            (long-term objectives)
+    ├─ Milestone       (sub-goals within goals)
+    ├─ Achievement     (unlockable achievements)
+    └─ Routine         (daily habits with streaks)
+
+Key concepts in the schema:
+  - @id: Primary key (unique identifier)
+  - @default(cuid()): Auto-generate unique ID
+  - @relation: Define relationships between tables
+  - onDelete: Cascade - When parent is deleted, delete children too
+  - @@index: Speed up queries on specific columns
+  - @@unique: Ensure combination of columns is unique
+
+
+─────────────────────────────────────────────────────────────────────────────
+STEP 7: Create Database from Schema
+─────────────────────────────────────────────────────────────────────────────
+
+Command:
+  npx prisma migrate dev --name init
+
+What it does:
+  1. Reads prisma/schema.prisma
+  2. Generates SQL migration file
+  3. Creates SQLite database at data/system.db
+  4. Applies the migration (creates all tables)
+  5. Generates Prisma Client (TypeScript code)
+
+What it creates:
+  ✓ prisma/migrations/ - Folder for migration history
+  ✓ prisma/migrations/20261113160820_init/migration.sql - SQL file
+  ✓ data/system.db - SQLite database file (147 KB)
+  ✓ node_modules/@prisma/client - Generated TypeScript client
+
+Migration file breakdown:
+  - CREATE TABLE statements for all 9 models
+  - CREATE INDEX statements for query optimization
+  - CONSTRAINT statements for foreign keys (relationships)
+
+Output explained:
+  "Your database is now in sync with your schema"
+  = Database structure matches schema.prisma exactly
+
+Time taken: ~10-15 seconds
+
+
+─────────────────────────────────────────────────────────────────────────────
+STEP 8: Create Directories
+─────────────────────────────────────────────────────────────────────────────
+
+Command:
+  mkdir -p prisma data
+
+What it does:
+  - Creates prisma/ directory (if it doesn't exist)
+  - Creates data/ directory (for SQLite database)
+  - The -p flag creates parent directories as needed
+
+Why separate data/ folder?
+  - Keeps database separate from code
+  - Easy to backup (just copy data/ folder)
+  - Excluded from Git (via .gitignore)
+  - Clear separation of concerns
+
+
+================================================================================
+PHASE 1: GIT SETUP & VERSION CONTROL
+================================================================================
+
+─────────────────────────────────────────────────────────────────────────────
+STEP 9: Update .gitignore for Privacy
+─────────────────────────────────────────────────────────────────────────────
+
+Manual step: Edit .gitignore file
+
+What we added:
+  /data/              - Never commit your personal database
+  *.db                - Exclude all .db files
+  *.db-journal        - SQLite temporary files
+  *.db-shm            - SQLite shared memory files
+  *.db-wal            - SQLite write-ahead log files
+  /backups/           - Keep backups local
+
+Why critical?
+  - Your quest data is PERSONAL
+  - Database contains your real activities
+  - Accidentally pushing data = privacy leak
+  - GitHub is public, database stays local
+
+The .gitignore prevents: git add . from including data/
+
+
+─────────────────────────────────────────────────────────────────────────────
+STEP 10: Initialize Git Repository
+─────────────────────────────────────────────────────────────────────────────
+
+Command:
+  git init
+
+What it does:
+  - Creates .git/ directory (hidden)
+  - Initializes empty Git repository
+  - Sets up Git version control
+  - Creates default branch (usually "master" or "main")
+
+What is Git?
+  - Version control system
+  - Tracks changes to your code
+  - Allows you to revert mistakes
+  - Enables collaboration
+  - Connects to GitHub for backup/sharing
+
+
+─────────────────────────────────────────────────────────────────────────────
+STEP 11: Stage Files for Commit
+─────────────────────────────────────────────────────────────────────────────
+
+Command:
+  git add .
+
+What it does:
+  - Stages ALL files in current directory
+  - Respects .gitignore (excludes data/)
+  - Prepares files to be committed
+  - The "." means "everything in this directory"
+
+What gets staged:
+  ✓ Source code (app/, prisma/, etc.)
+  ✓ Configuration files
+  ✓ README.md
+  ✗ node_modules/ (in .gitignore)
+  ✗ data/ (in .gitignore) ← YOUR DATA STAYS LOCAL
+
+Verify with:
+  git status
+
+
+─────────────────────────────────────────────────────────────────────────────
+STEP 12: Create First Commit
+─────────────────────────────────────────────────────────────────────────────
+
+Command:
+  git commit -m "Initial commit - Project foundation
+
+  Set up Next.js 15 + TypeScript + Tailwind CSS + Prisma ORM stack.
+
+  Created complete database schema with models for:
+  - Player profile (levels, XP, rank)
+  - Quests and quest completions
+  - XP transaction ledger
+  - Goals and milestones
+  - Attributes (Intelligence, Strength, etc.)
+  - Achievements
+  - Routines and streaks
+
+  Database uses SQLite for local-first approach. All personal data
+  stays local and is excluded from version control.
+
+  Co-Authored-By: Claude Code <noreply@anthropic.com>"
+
+What it does:
+  - Creates a snapshot of staged files
+  - Saves commit to local Git history
+  - Generates commit hash (e.g., 7e34d6f)
+  - Records author, date, message
+
+Commit message structure:
+  Line 1: Short summary (50 chars)
+  Line 2: Blank
+  Lines 3+: Detailed description
+
+Output:
+  [master (root-commit) 7e34d6f] Initial commit - Project foundation
+  27 files changed, 12469 insertions(+)
+
+
+─────────────────────────────────────────────────────────────────────────────
+STEP 13: Connect to GitHub Remote
+─────────────────────────────────────────────────────────────────────────────
+
+Command:
+  git remote add origin https://github.com/vihaanishere/system-project.git
+
+What it does:
+  - Adds a "remote" named "origin"
+  - Points to your GitHub repository
+  - "origin" is the default name for the main remote
+  - URL is where your code will be pushed
+
+Verify with:
+  git remote -v
+
+Output shows:
+  origin  https://github.com/vihaanishere/system-project.git (fetch)
+  origin  https://github.com/vihaanishere/system-project.git (push)
+
+
+─────────────────────────────────────────────────────────────────────────────
+STEP 14: Rename Branch to 'main'
+─────────────────────────────────────────────────────────────────────────────
+
+Command:
+  git branch -M main
+
+What it does:
+  - Renames current branch from "master" to "main"
+  - The -M flag forces the rename
+  - GitHub's default branch is now "main"
+
+Why?
+  - Modern convention (GitHub, GitLab use "main")
+  - Matches what GitHub expects
+  - Better naming convention
+
+
+─────────────────────────────────────────────────────────────────────────────
+STEP 15: Push to GitHub
+─────────────────────────────────────────────────────────────────────────────
+
+Command:
+  git push -u origin main
+
+What it does:
+  - Pushes local commits to GitHub
+  - "origin" = the remote we added in step 13
+  - "main" = the branch we're pushing
+  - -u flag sets upstream (tracking relationship)
+
+What happens:
+  1. Git sends your commits to GitHub
+  2. GitHub creates the "main" branch
+  3. Your code is now public at github.com/vihaanishere/system-project
+  4. data/ is NOT included (thanks to .gitignore)
+
+After -u flag is set, you can use:
+  git push (shorter command)
+
+Time taken: ~5-15 seconds (depending on internet speed)
+
+
+================================================================================
+COMMON COMMANDS YOU'LL USE GOING FORWARD
+================================================================================
+
+─────────────────────────────────────────────────────────────────────────────
+Development Server
+─────────────────────────────────────────────────────────────────────────────
+
+Command: npm run dev
+Purpose: Start Next.js development server
+Access: http://localhost:3000
+Features:
+  - Hot reload (changes appear instantly)
+  - Error overlay (shows errors in browser)
+  - Fast Refresh (preserves React state)
+
+Stop server: Ctrl+C
+
+
+─────────────────────────────────────────────────────────────────────────────
+Database Commands (Prisma)
+─────────────────────────────────────────────────────────────────────────────
+
+View database in GUI:
+  npx prisma studio
+  Opens: http://localhost:5555
+  Features: Browse/edit data visually
+
+Generate Prisma Client (after schema changes):
+  npx prisma generate
+  When: After manually editing schema.prisma
+
+Create new migration (after schema changes):
+  npx prisma migrate dev --name <description>
+  Example: npx prisma migrate dev --name add_profile_image
+  When: After adding/modifying models in schema.prisma
+
+Reset database (WARNING: Deletes all data):
+  npx prisma migrate reset
+  When: Starting fresh during development
+
+Check database status:
+  npx prisma migrate status
+  Shows: Applied and pending migrations
+
+
+─────────────────────────────────────────────────────────────────────────────
+Git Commands (Daily Workflow)
+─────────────────────────────────────────────────────────────────────────────
+
+Check status:
+  git status
+  Shows: Modified files, staged files, current branch
+
+View changes:
+  git diff
+  Shows: Line-by-line changes in files
+
+Stage specific files:
+  git add <file>
+  Example: git add app/dashboard/page.tsx
+
+Commit with message:
+  git commit -m "Add dashboard component"
+
+Push to GitHub:
+  git push
+
+Pull from GitHub (get latest changes):
+  git pull
+
+View commit history:
+  git log --oneline
+
+Undo unstaged changes:
+  git checkout -- <file>
+
+Undo last commit (keep changes):
+  git reset --soft HEAD~1
+
+
+─────────────────────────────────────────────────────────────────────────────
+npm Commands
+─────────────────────────────────────────────────────────────────────────────
+
+Install new package:
+  npm install <package-name>
+  Example: npm install framer-motion
+
+Install dev dependency:
+  npm install -D <package-name>
+  Example: npm install -D @types/node
+
+Uninstall package:
+  npm uninstall <package-name>
+
+Update all packages:
+  npm update
+
+Check for outdated packages:
+  npm outdated
+
+Run linter:
+  npm run lint
+
+Build for production:
+  npm run build
+
+Start production server:
+  npm start
+
+
+================================================================================
+TROUBLESHOOTING COMMON ISSUES
+================================================================================
+
+─────────────────────────────────────────────────────────────────────────────
+Issue: "Module not found" errors
+─────────────────────────────────────────────────────────────────────────────
+
+Solution:
+  1. Delete node_modules/
+  2. Delete package-lock.json
+  3. Run: npm install
+  4. Restart dev server: npm run dev
+
+
+─────────────────────────────────────────────────────────────────────────────
+Issue: Prisma Client is out of sync
+─────────────────────────────────────────────────────────────────────────────
+
+Error message: "Prisma Client did not initialize yet"
+
+Solution:
+  npx prisma generate
+
+When it happens: After pulling changes or editing schema.prisma
+
+
+─────────────────────────────────────────────────────────────────────────────
+Issue: Port 3000 already in use
+─────────────────────────────────────────────────────────────────────────────
+
+Solution 1 (Kill the process):
+  Windows:
+    netstat -ano | findstr :3000
+    taskkill /PID <PID> /F
+
+  Mac/Linux:
+    lsof -ti:3000 | xargs kill
+
+Solution 2 (Use different port):
+  npm run dev -- -p 3001
+
+
+─────────────────────────────────────────────────────────────────────────────
+Issue: Git push rejected
+─────────────────────────────────────────────────────────────────────────────
+
+Error: "Updates were rejected because the remote contains work..."
+
+Solution:
+  git pull --rebase
+  git push
+
+
+─────────────────────────────────────────────────────────────────────────────
+Issue: Accidentally committed data/
+─────────────────────────────────────────────────────────────────────────────
+
+Solution (BEFORE pushing):
+  git rm -r --cached data/
+  git commit -m "Remove data folder from tracking"
+
+Solution (AFTER pushing - DANGER):
+  DO NOT DO THIS - Your data is now public
+  Create new repo and migrate if this happens
+
+
+================================================================================
+PROJECT STRUCTURE EXPLAINED
+================================================================================
+
+system-project/
+│
+├── app/                          # Next.js App Router (pages & routes)
+│   ├── page.tsx                  # Home page (/)
+│   ├── layout.tsx                # Root layout (wraps all pages)
+│   ├── globals.css               # Global styles
+│   └── dashboard/                # Example: /dashboard route
+│       └── page.tsx              # Dashboard page
+│
+├── prisma/                       # Prisma ORM files
+│   ├── schema.prisma             # Database schema definition
+│   └── migrations/               # Migration history (DO commit)
+│       └── 20261113160820_init/  # Initial migration
+│           └── migration.sql     # SQL commands executed
+│
+├── data/                         # Database storage (NEVER commit)
+│   └── system.db                 # SQLite database file
+│
+├── node_modules/                 # Dependencies (DO NOT commit)
+│   └── ...                       # Auto-generated, ~350+ packages
+│
+├── public/                       # Static assets (images, fonts, etc.)
+│   └── *.svg                     # Default Next.js logos
+│
+├── package.json                  # Project dependencies & scripts
+├── package-lock.json             # Locked dependency versions
+├── tsconfig.json                 # TypeScript configuration
+├── next.config.ts                # Next.js configuration
+├── tailwind.config.ts            # Tailwind CSS configuration
+├── .gitignore                    # Files to exclude from Git
+├── README.md                     # Project documentation
+└── COMMANDS_REFERENCE.txt        # This file!
+
+
+================================================================================
+NEXT STEPS - PHASE 1: VERTICAL SLICE
+================================================================================
+
+Now that the foundation is complete, we'll build the core loop:
+
+1. Create Prisma database client utility
+2. Build a simple dashboard page with Solo Leveling theme
+3. Create a "Create Quest" form
+4. Display quest cards
+5. Implement "Complete Quest" button that:
+   - Marks quest as completed
+   - Awards XP
+   - Updates player level
+   - Shows animation
+
+Commands you'll learn next:
+  - How to use Prisma Client in Next.js
+  - Server Actions (new Next.js 15 feature)
+  - Server Components vs Client Components
+  - CSS animations with Tailwind
+
+Stay tuned! 🚀
+
+================================================================================
+USEFUL RESOURCES
+================================================================================
+
+Next.js Documentation:
+  https://nextjs.org/docs
+
+Prisma Documentation:
+  https://www.prisma.io/docs
+
+Tailwind CSS Documentation:
+  https://tailwindcss.com/docs
+
+TypeScript Handbook:
+  https://www.typescriptlang.org/docs/
+
+Git Cheat Sheet:
+  https://education.github.com/git-cheat-sheet-education.pdf
+
+Solo Leveling (Inspiration):
+  https://en.wikipedia.org/wiki/Solo_Leveling
+
+================================================================================
+END OF COMMANDS REFERENCE
+================================================================================
+
+Last updated: 2026-11-13
+Project version: 0.1.0
+Phase: Foundation Complete ✓

@@ -1,0 +1,189 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../data/system.db"
+}
+
+// ============================================
+// CORE MODELS - Phase 1: Vertical Slice
+// ============================================
+
+// Player Model - The main user profile
+model Player {
+  id        String   @id @default(cuid())
+  name      String
+  level     Int      @default(1)
+  totalXp   Int      @default(0)
+  rank      String   @default("Beginner")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  attributes    Attribute[]
+  quests        Quest[]
+  xpHistory     XPTransaction[]
+  goals         Goal[]
+  achievements  Achievement[]
+  routines      Routine[]
+}
+
+// Attribute Model - Player stats (Strength, Intelligence, etc.)
+model Attribute {
+  id       String @id @default(cuid())
+  name     String // "Intelligence", "Strength", "Discipline", etc.
+  value    Int    @default(0)
+  category String // For grouping related attributes
+
+  playerId String
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([playerId, name])
+  @@index([playerId])
+}
+
+// Quest Model - Tasks and activities
+model Quest {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  difficulty  String    // "Easy", "Medium", "Hard", "Epic"
+  xpReward    Int
+  category    String    // "DSA", "Full-Stack", "College", "Gym", etc.
+  status      String    @default("ACTIVE") // "ACTIVE", "COMPLETED", "ABANDONED"
+  type        String    @default("DAILY") // "DAILY", "WEEKLY", "MAIN", "SIDE", "MILESTONE"
+  dueDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  playerId String
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  goalId String?
+  goal   Goal?   @relation(fields: [goalId], references: [id], onDelete: SetNull)
+
+  completions QuestCompletion[]
+
+  @@index([playerId, status])
+  @@index([playerId, category])
+}
+
+// Quest Completion - History of completed quests
+model QuestCompletion {
+  id          String   @id @default(cuid())
+  completedAt DateTime @default(now())
+  notes       String?
+  xpAwarded   Int
+
+  questId String
+  quest   Quest  @relation(fields: [questId], references: [id], onDelete: Cascade)
+
+  @@index([questId, completedAt])
+}
+
+// XP Transaction - Ledger of all XP gains/losses
+model XPTransaction {
+  id          String   @id @default(cuid())
+  amount      Int
+  type        String   // "QUEST_COMPLETION", "ACHIEVEMENT", "DAILY_BONUS", etc.
+  sourceId    String?  // ID of the quest/achievement that triggered this
+  description String?
+  createdAt   DateTime @default(now())
+
+  playerId String
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId, createdAt])
+}
+
+// Goal Model - Long-term objectives
+model Goal {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  category    String
+  status      String    @default("ACTIVE") // "ACTIVE", "COMPLETED", "PAUSED", "ARCHIVED"
+  priority    String    @default("MEDIUM") // "LOW", "MEDIUM", "HIGH"
+  targetDate  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  playerId String
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  quests     Quest[]
+  milestones Milestone[]
+
+  @@index([playerId, status])
+}
+
+// Milestone - Sub-goals within a goal
+model Milestone {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  completed   Boolean  @default(false)
+  order       Int      // For ordering milestones
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  goalId String
+  goal   Goal   @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([goalId, order])
+}
+
+// Achievement Model - Unlockable achievements
+model Achievement {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  icon        String?
+  unlockedAt  DateTime @default(now())
+  category    String
+
+  playerId String
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+}
+
+// Routine Model - Recurring habits
+model Routine {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  recurrence    String   // "DAILY", "WEEKLY", "CUSTOM"
+  currentStreak Int      @default(0)
+  longestStreak Int      @default(0)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  playerId String
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  completions RoutineCompletion[]
+
+  @@index([playerId, active])
+}
+
+// Routine Completion - History of completed routines
+model RoutineCompletion {
+  id          String   @id @default(cuid())
+  completedAt DateTime @default(now())
+  notes       String?
+
+  routineId String
+  routine   Routine @relation(fields: [routineId], references: [id], onDelete: Cascade)
+
+  @@index([routineId, completedAt])
+}

@@ -53,3 +53,4 @@ next-env.d.ts
 # Prisma generated files (will be regenerated)
 /prisma/migrations/*_*
 !prisma/migrations/migration_lock.toml
+

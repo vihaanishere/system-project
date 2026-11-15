@@ -1,5 +1,7 @@
 "use client";
 import {useEffect, useState} from "react";
+import QuestForm from "@/components/QuestForm";
+
 type Attribute = {
   id: string;
   name: string;
@@ -34,6 +36,8 @@ export default function Dashboard(){
   const [player, setPlayer] = useState<Player | null>(null);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState<string | null>(null);
+  const [showQuestForm, setShowQuestForm] = useState(false);
+  const [editingQuest, setEditingQuest] = useState<any>(null);
   const fetchPlayer = async () => {
     try {
       const res = await fetch("/api/player");
@@ -153,7 +157,17 @@ export default function Dashboard(){
 
         {/* Active Quests */}
         <div className="bg-gray-800 rounded-lg p-6">
-          <h3 className="text-2xl font-bold mb-4">Active Quests</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-2xl font-bold">Active Quests</h3>
+            <button
+              onClick={() => {
+                setEditingQuest(null);
+                setShowQuestForm(true);
+              }}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-4 py-2 rounded-lg font-semibold transition-all">
+                + New Quest
+            </button>
+          </div>
           {player.quests.length === 0 ? (
             <p className="text-gray-400">No active quests. Time to create some!</p>
           ) : (
@@ -205,6 +219,17 @@ export default function Dashboard(){
             </div>
           )}
         </div>
+
+        {/* Quest Form Modal */}
+        <QuestForm
+          isOpen={showQuestForm}
+          onClose={() => setShowQuestForm(false)}
+          onSuccess={() => {
+            fetchPlayer();
+            alert("Quest saved successfully!");
+          }}
+          editQuest={editingQuest}
+        />
       </div>
     </div>
   );

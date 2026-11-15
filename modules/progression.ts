@@ -1,7 +1,7 @@
 export function getXpForLevel(level: number): number {
     return Math.floor(100 * Math.pow(level, 1.5));
 }
-export function caclulateLevelFromXP(totalXp: number): number {
+export function calculateLevelFromXP(totalXp: number): number {
     let level = 1;
     let XpRequired = 0;
     while (XpRequired <= totalXp){
@@ -35,7 +35,7 @@ export function getRankFromLevel(level: number): string {
     if(level >= 15) return "D-Rank Hunter";
     return "E-Rank Hunter";
 }
-export function caculateQuestXp(baseDifficulty: string, timeSpent?: number): number {
+export function calculateQuestXp(baseDifficulty: string, timeSpent?: number): number {
     const baseXp: Record<string, number> = {
         Easy: 50,
         Medium: 150,

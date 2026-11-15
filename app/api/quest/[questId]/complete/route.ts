@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { caclulateLevelFromXP, getRankFromLevel } from "@/modules/progression";
+import { calculateLevelFromXP, getRankFromLevel } from "@/modules/progression";
 
 export async function POST(
   request: Request,
@@ -32,7 +32,7 @@ export async function POST(
     // Calculate new XP and level
     const newTotalXp = quest.player.totalXp + quest.xpReward;
     const oldLevel = quest.player.level;
-    const newLevel = caclulateLevelFromXP(newTotalXp);
+    const newLevel = calculateLevelFromXP(newTotalXp);
     const leveledUp = newLevel > oldLevel;
     const newRank = getRankFromLevel(newLevel);
 

@@ -73,6 +73,54 @@ export default function Dashboard(){
       setCompleting(null);
     }
   };
+  const editQuest = (quest: Quest) => {
+    setEditingQuest(quest);
+    setShowQuestForm(true);
+  };
+  const deleteQuest = async (questId: string) => {
+    if (!confirm("Delete this quest? This cannot be undone.")){
+      if(!confirm("Delete this quest? This cannot be undone.")){
+        return;
+      }
+    }
+    try {
+      const res = await fetch(`/api/quest/${questId}/delete`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("Quest deleted successfully");
+        fetchPlayer();
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    }catch (error){
+      console.error("Failed to delete quest:", error);
+      alert("Failed to delete quest");
+    }}
+
+  const abandonQuest = async (questId: string) => {
+    if(!confirm("Abandon this quest? You wont be recieve any XP.")){
+      return;
+    }
+    try {
+        const res = await fetch(`/api/quest/${questId}/abandon`, {
+          method: "POST",
+    });
+    const data = await res.json();
+    if (data.success){
+      alert("Quest abandoned");
+      fetchPlayer();
+    } else {
+      alert(`Error: ${data.error}`);
+    }
+  }catch(error){
+    console.error("Failed to abandon quest:", error);
+    alert("Failed to abandon quest");
+  }
+}
+  
+
   useEffect(() => {
     fetchPlayer();
   }, []);
@@ -199,19 +247,39 @@ export default function Dashboard(){
                     </div>
                     <p className="text-gray-400 text-sm">{quest.description}</p>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
+                  <div className="flex items-center gap-2">
+                    <div className="text-right mr-4">
                       <p className="text-blue-400 font-bold">
                         +{quest.xpReward} XP
                       </p>
                       <p className="text-gray-500 text-xs">{quest.type}</p>
                     </div>
+                    
+                    {/* Action Buttons */}
+                    <button
+                      onClick={() => editQuest(quest)}
+                      className="bg-gray-600 hover:bg-gray-500 px-3 py-2 rounded font-semibold transition-colors text-sm"
+                    >
+                      Edit
+                    </button>
                     <button
                       onClick={() => completeQuest(quest.id)}
                       disabled={completing === quest.id}
-                      className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-4 py-2 rounded font-semibold transition-colors"
+                      className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-3 py-2 rounded font-semibold transition-colors text-sm"
                     >
                       {completing === quest.id ? "..." : "Complete"}
+                    </button>
+                    <button
+                      onClick={() => abandonQuest(quest.id)}
+                      className="bg-orange-600 hover:bg-orange-700 px-3 py-2 rounded font-semibold transition-colors text-sm"
+                    >
+                      Abandon
+                    </button>
+                    <button
+                      onClick={() => deleteQuest(quest.id)}
+                      className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded font-semibold transition-colors text-sm"
+                    >
+                      Delete
                     </button>
                   </div>
                 </div>

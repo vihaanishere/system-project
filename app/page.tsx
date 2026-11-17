@@ -57,10 +57,16 @@ export default function Dashboard(){
       });
       const data = await res.json();
       if(data.success){
+        let attributeMsg = "";
+        if (data.attributeChanges && data.attributeChanges.length > 0){
+          attributeMsg = "\n\n" + data.attributeChanges
+          .map((attr: any)=> `📊 ${attr.name} +${attr.gain} (now ${attr.newValue})`)
+          .join("\n")
+        }
         alert(
-           `✅ Quest Complete!\n+${data.xpAwarded} XP${
-            data.leveledUp ? `\n🎉 LEVEL UP! Now level ${data.newLevel}` : ""
-           }`
+          `✅ Quest Complete!\n+${data.xpAwarded} XP${attributeMsg}${
+      data.leveledUp ? `\n\n🎉 LEVEL UP! Now level ${data.newLevel}` : ""
+          }`
         );
         fetchPlayer();
       } else {
@@ -88,7 +94,7 @@ export default function Dashboard(){
         method: "DELETE",
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success){
         alert("Quest deleted successfully");
         fetchPlayer();
       } else {
